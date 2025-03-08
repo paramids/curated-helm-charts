@@ -1,0 +1,31 @@
+{{- if .Values.platform.secrets.enabled }}
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: {{ include "atlantis.fullname" . }}-store
+  labels:
+    {{- include "atlantis.labels" . | nindent 4 }}
+spec:
+  provider:
+    {{- if .Values.platform.cloud eq "aws" }}
+    aws:
+        service: SecretsManager
+        role: arn:aws:iam::123456789012:role/external-secrets
+        region: eu-central-1
+        auth:
+            secretRef:
+            accessKeyIDSecretRef:
+                name: awssm-secret
+                key: access-key
+            secretAccessKeySecretRef:
+                name: awssm-secret
+                key: secret-access-key
+    {{- else if .Values.platform.cloud eq "azure" -}}
+    azurekv:
+    authType: WorkloadIdentity
+    vaultUrl: {{ .Values.platform.secrets.azure.keyvault | trim }}
+    {{- else -}}
+    gcpsm:
+      projectID: {{ .Values.platform.secrets.gcp.project | trim }}
+    {{- end -}}
+{{- end -}}
